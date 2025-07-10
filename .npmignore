@@ -1,0 +1,17 @@
+/.idea
+/src
+/node_modules
+/public
+/test
+/tsconfigs
+.eslintrc.json
+.gitignore
+.npmignore
+.prettierignore
+.prettierrc
+jest.config.js
+next.config.js
+next-env.d.ts
+package-lock.json
+tsconfig.build.json
+tsconfig.json

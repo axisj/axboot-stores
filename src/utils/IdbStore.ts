@@ -10,9 +10,7 @@ async function ensureLi(): Promise<boolean> {
         !(
           await veLi({
             ls: sessionStorage.getItem('a_' + 'x_b' + 'oo' + 't_l' + 'ice' + 'nse') || '',
-            pk: `-----BEGIN PUBLIC KEY-----
-MCowBQYDK2VwAyEAVpUbI2D0OByQmXsPlo9fhMx/nPN2SwUAMAc4EF8wFvo=
------END PUBLIC KEY-----`,
+            pk: `MCowBQYDK2VwAyEAVpUbI2D0OByQmXsPlo9fhMx/nPN2SwUAMAc4EF8wFvo=`,
             ho: typeof location !== 'undefined' ? (location as any)['ho' + 'stn' + 'ame'] : undefined,
           })
         ).ok

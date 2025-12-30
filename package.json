@@ -1,17 +1,19 @@
 {
   "name": "@axboot/stores",
   "version": "0.0.2",
-  "jsnext:main": "dist/es6/index.js",
-  "module": "dist/es6/index.js",
-  "main": "dist/commonjs/index.js",
+  "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
+  "jsnext:main": "dist/esm/index.js",
+  "types": "dist/esm/index.d.ts",
   "repository": "https://github.com/axisj/axboot-stores",
   "license": "MIT",
   "scripts": {
     "lint": "next lint",
     "build": "npm run build:library",
-    "build:es5": "rimraf ./dist/commonjs && tsc --p tsconfigs/tsconfig.es5.json",
+    "build:es5": "rimraf ./dist/cjs && tsc --p tsconfigs/tsconfig.es5.json",
     "build:es6": "rimraf ./dist/es6 && tsc --p tsconfigs/tsconfig.es6.json",
-    "build:library": "npm run build:es5 && npm run build:es6",
+    "build:esm": "rimraf ./dist/esm && tsc --p tsconfigs/tsconfig.esm.json",
+    "build:library": "npm run build:es5 && npm run build:es6 && npm run build:esm",
     "prepublishOnly": "npm run build:library"
   },
   "lint-staged": {
@@ -24,14 +26,14 @@
     "dayjs": "^1.11.13",
     "lodash": "^4.17.21",
     "lzutf8": "^0.6.3",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-router-dom": "^7.7.0",
-    "zustand": "^4.4.2"
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "zustand": "^4.5.7"
   },
   "devDependencies": {
-    "@types/react": "^18.0.18",
-    "@types/react-dom": "^18.0.6",
+    "@types/node": "^25.0.3",
+    "@types/react": "^18.2.79",
+    "@types/react-dom": "^18.2.25",
     "@types/uuid": "^9.0.0",
     "eslint": "8.22.0",
     "eslint-config-next": "12.2.5",

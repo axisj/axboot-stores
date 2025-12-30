@@ -1,3 +1,27 @@
+import { veLi } from '../license';
+import { fLicAlO } from './fLicAlO';
+
+let verifyPromise: Promise<boolean> | null = null;
+
+async function ensureLi(): Promise<boolean> {
+  if (!verifyPromise) {
+    verifyPromise = (async () => {
+      if (
+        !(
+          await veLi({
+            ls: sessionStorage.getItem('a_' + 'x_b' + 'oo' + 't_l' + 'ice' + 'nse') || '',
+            pk: `MCowBQYDK2VwAyEAVpUbI2D0OByQmXsPlo9fhMx/nPN2SwUAMAc4EF8wFvo=`,
+            ho: typeof location !== 'undefined' ? (location as any)['ho' + 'stn' + 'ame'] : undefined,
+          })
+        ).ok
+      )
+        fLicAlO();
+      return true;
+    })();
+  }
+  return verifyPromise;
+}
+
 interface IdbStoreOptions {
   batchInterval?: number;
   version?: number;
@@ -8,7 +32,7 @@ export class IdbStore {
   public batchInterval: number;
   public db: Promise<IDBDatabase>;
   private _actions: {
-    type: "get" | "set" | "delete";
+    type: 'get' | 'set' | 'delete';
     key: string;
     value?: any;
     resolve?: (value: any) => void;
@@ -36,12 +60,16 @@ export class IdbStore {
 
     // promise for the currently pending commit to the database if it exists
     this._commitPromise = null;
+
+    setTimeout(() => {
+      ensureLi();
+    }, 1000);
   }
 
   public async get<T = any>(key: string): Promise<T> {
     const getPromise = new Promise<T>((resolve, reject) => {
       this._actions.push({
-        type: "get",
+        type: 'get',
         key,
         resolve,
         reject,
@@ -57,7 +85,7 @@ export class IdbStore {
 
   public async set(key: string, value: any) {
     this._actions.push({
-      type: "set",
+      type: 'set',
       key,
       value,
     });
@@ -67,7 +95,7 @@ export class IdbStore {
 
   public async delete(key: string): Promise<unknown> {
     this._actions.push({
-      type: "delete",
+      type: 'delete',
       key,
     });
 
@@ -83,7 +111,7 @@ export class IdbStore {
     const request = indexedDB.deleteDatabase(db.name);
 
     // reject commits after destruction and by extension reject new actions
-    this.db = Promise.reject(new Error("This idb-kv instance has been destroyed"));
+    this.db = Promise.reject(new Error('This idb-kv instance has been destroyed'));
 
     return new Promise((resolve, reject) => {
       request.onsuccess = () => resolve({});
@@ -103,27 +131,27 @@ export class IdbStore {
   // wait for the batchInterval, then commit the queued actions to the database
   private async _commit() {
     // wait batchInterval milliseconds for more actions
-    await new Promise((resolve) => setTimeout(resolve, this.batchInterval));
+    await new Promise(resolve => setTimeout(resolve, this.batchInterval));
 
     // the first queue lasts until the db is opened
     const db = await this.db;
 
-    const transaction = db.transaction(this.storeName, "readwrite");
+    const transaction = db.transaction(this.storeName, 'readwrite');
     const store = transaction.objectStore(this.storeName);
 
     for (const action of this._actions) {
       switch (action.type) {
-        case "get": {
+        case 'get': {
           const request = store.get(action.key);
           request.onsuccess = () => action.resolve?.(request.result);
           request.onerror = () => action.reject?.(request.error);
           break;
         }
-        case "set": {
+        case 'set': {
           store.put(action.value, action.key);
           break;
         }
-        case "delete": {
+        case 'delete': {
           store.delete(action.key);
           break;
         }
@@ -138,7 +166,7 @@ export class IdbStore {
       // transaction.oncomplete = () => resolve();
       transaction.oncomplete = () => resolve({});
 
-      transaction.onabort = (event) => reject(event);
+      transaction.onabort = event => reject(event);
 
       transaction.onerror = () => {
         // if aborted, onerror is still called, but transaction.error is null

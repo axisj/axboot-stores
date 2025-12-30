@@ -1,7 +1,12 @@
+'use client';
+
 import React from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { create } from 'zustand';
 
+/* ---------------------------------------------------------------------
+ * TYPES
+ * -------------------------------------------------------------------*/
 export type ModalFactory<T> = (
   open: boolean,
   resolve: (value: T) => T,
@@ -19,14 +24,16 @@ interface IModalModel<T = any> {
 export class ModalModelClass {
   public modal: IModalModel;
   public open: boolean = true;
-
+  public rejected: boolean = false;
+  public hasHistory: boolean = false;
   public params: unknown;
+
   public resolve!: (value?: unknown) => void;
   public reject!: (reason?: unknown) => void;
   public onClose!: (evt: React.MouseEvent) => void;
   public afterClose!: () => void;
 
-  public constructor(value: IModalModel) {
+  constructor(value: IModalModel) {
     this.modal = value;
   }
 }
@@ -38,79 +45,141 @@ export interface ModalModel {
 
 export interface ModalActions {
   openModal: <T = void>(modalFactory: ModalFactory<T>, id?: string) => Promise<T>;
-  closeModal: (id?: string) => void;
-  removeModal: (id?: string) => void;
+  _closeModal: (id?: string, fromPopState?: boolean) => void;
+  removeModal: (id: string) => void;
   closeAllModal: () => void;
 }
 
 export interface ModalStore extends ModalModel, ModalActions {}
 
+interface OpenModalOptions {
+  skipHistory?: boolean;
+}
+
+/* ---------------------------------------------------------------------
+ * STORE
+ * -------------------------------------------------------------------*/
 export const useModalStore = create<ModalStore>((set, get) => ({
   modals: new Map(),
-  openModal: <T = void>(modalFactory: ModalFactory<T>, id?: string) => {
-    return new Promise<T>((resolve, reject) => {
-      if (!id) id = uuidv4();
 
+  /* -----------------------------------------------------------------
+     ✓ OPEN MODAL → 히스토리 pushState 추가
+     -----------------------------------------------------------------*/
+  openModal: <T = void>(modalFactory: ModalFactory<T>, id: string = uuidv4(), openModalOptions?: OpenModalOptions) => {
+    return new Promise<T>((resolve, reject) => {
       if (get().modals.get(id)) {
+        // 이미 같은 id의 모달이 있으면 무시
         return;
       }
 
       const modal = new ModalModelClass({ id, modalFactory });
 
+      /* resolve / reject */
       modal.resolve = value => {
-        get().closeModal(id);
+        get()._closeModal(id);
         resolve(value as T);
       };
       modal.reject = reason => {
-        get().closeModal(id);
+        get()._closeModal(id);
         reject(reason);
       };
-      modal.onClose = evt => {
-        if (evt.target instanceof HTMLElement) {
-          if (evt?.target && evt?.currentTarget) {
-            if (evt.target['tagName'] !== 'INPUT' && evt.target['tagName'] !== 'TEXTAREA') {
-              modal.reject();
-              return;
-            }
-          }
 
-          const current = evt.currentTarget as HTMLElement;
-          if (typeof current.focus === 'function') {
-            current.focus();
+      /* overlay click */
+      modal.onClose = evt => {
+        const target = evt.target as HTMLElement;
+        const current = evt.currentTarget as HTMLElement;
+
+        if (target && current) {
+          if (target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA') {
+            modal.reject();
+            return;
           }
+          current.focus?.();
         } else {
           modal.reject();
         }
       };
+
       modal.afterClose = () => {
-        get().removeModal(id);
+        get().removeModal(id as string);
       };
 
+      /* --- 히스토리 더미 state 쌓기 --- */
+      if (!openModalOptions?.skipHistory) {
+        history.pushState({ _modalId: id }, '', location.href);
+        modal.hasHistory = true;
+      }
+
+      /* add modal */
       get().modals.set(id, modal);
       set({ updateAt: Date.now() });
     });
   },
-  closeModal: async id => {
-    if (id) {
-      const modal = get().modals.get(id);
-      if (modal) {
-        modal.open = false;
-        get().modals.set(id, modal);
+
+  /* -----------------------------------------------------------------
+     ✓ CLOSE MODAL → history.back() 로 pushState 제거
+     -----------------------------------------------------------------*/
+  _closeModal: (id?: string, fromPopState = false) => {
+    const modals = get().modals;
+
+    // id 없으면 가장 최근 모달을 자동으로 닫음
+    const modalId = id || Array.from(modals.keys()).at(-1);
+    if (!modalId) return;
+
+    const modal = modals.get(modalId);
+    if (!modal) return;
+
+    modal.open = false;
+    modals.set(modalId, modal);
+
+    // popstate 로 인해 닫힌 경우에는 history.back() 하지 않음
+    if (!fromPopState) {
+      // dummy state 제거
+      if (history.state && history.state._modalId === modalId) {
+        history.back();
       }
-    } else {
-      get().modals.clear();
     }
 
     set({ updateAt: Date.now() });
   },
+
+  /* -----------------------------------------------------------------
+     REMOVE
+     -----------------------------------------------------------------*/
   removeModal: id => {
-    if (id) {
-      get().modals.delete(id);
-      set({ updateAt: Date.now() });
-    }
+    get().modals.delete(id);
+    set({ updateAt: Date.now() });
   },
+
+  /* -----------------------------------------------------------------
+     CLOSE ALL
+     -----------------------------------------------------------------*/
   closeAllModal: () => {
     get().modals.clear();
     set({ updateAt: Date.now() });
   },
+  closeModal: (id: string) => {
+    const modal = get().modals.get(id);
+    if (!modal) return;
+
+    modal.reject();
+  },
 }));
+
+/* ---------------------------------------------------------------------
+ * GLOBAL POPSTATE LISTENER → 뒤로가기 시 모달 닫기
+ * -------------------------------------------------------------------*/
+if (typeof window !== 'undefined') {
+  window.addEventListener('popstate', () => {
+    const store = useModalStore.getState();
+    const modals = store.modals;
+
+    if (modals.size === 0) return;
+
+    // 가장 최근 모달 닫기
+    const lastModalId = Array.from(modals.keys()).at(-1);
+    if (!lastModalId) return;
+
+    store._closeModal(lastModalId, true); // fromPopState=true
+  });
+}

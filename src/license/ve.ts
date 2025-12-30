@@ -1,5 +1,5 @@
 import { base64urlToBytes, base64urlToString, concatUtf8 } from './base64url';
-import { matchHost } from './hostMatch';
+import { isLocalHost, matchHost, normalizeHost } from './hostMatch';
 import type { LicenseHeader, LicensePayload, VerifyResult } from './types';
 
 function pemToDer(pem: string): ArrayBuffer {
@@ -28,7 +28,14 @@ async function importEd25519PublicKey(pem: string): Promise<CryptoKey> {
 export async function veLi(params: { ls: string; pk: string; ho?: string; nowMs?: number }): Promise<VerifyResult> {
   const ls = (params.ls ?? '').trim();
   const pk = (params.pk ?? '').trim();
+  // host match
+  const host = params.ho ?? (typeof location !== 'undefined' ? location.hostname : undefined);
   if (!ls || !pk) return { ok: false, reason: 'MALFORMED' };
+
+  const h = normalizeHost(host ?? '');
+  if (isLocalHost(h)) {
+    return { ok: true, header: undefined, payload: undefined };
+  }
 
   const parts = ls.split('.');
   if (parts.length !== 3) return { ok: false, reason: 'MALFORMED' };
@@ -65,12 +72,9 @@ export async function veLi(params: { ls: string; pk: string; ho?: string; nowMs?
 
     const ok = await crypto.subtle.verify({ name: 'Ed25519' }, key, sig, data);
     if (!ok) return { ok: false, reason: 'SIGNATURE_INVALID', header, payload };
-  } catch {
+  } catch (error) {
     return { ok: false, reason: 'SIGNATURE_INVALID', header, payload };
   }
-
-  // host match
-  const host = params.ho ?? (typeof location !== 'undefined' ? location.hostname : undefined);
 
   if (host) {
     const okHost = matchHost(host, payload.hosts ?? []);

@@ -1,8 +1,8 @@
-function normalizeHost(host: string) {
+export function normalizeHost(host: string) {
   return host.trim().toLowerCase();
 }
 
-function isLocalHost(host: string) {
+export function isLocalHost(host: string) {
   // 포트 제거
   const h = host.split(':')[0];
 
@@ -13,7 +13,7 @@ function isLocalHost(host: string) {
   if (h === '127.0.0.1' || h === '0.0.0.0') return true;
 
   // private network (192.168.x.x)
-  return /^192\.168\.\d{1,3}\.\d{1,3}$/.test(h);
+  return /^192\.168\.(?:25[0-5]|2[0-4]\d|1?\d?\d)\.(?:25[0-5]|2[0-4]\d|1?\d?\d)$/.test(h);
 }
 
 export function matchHost(host: string, hostPatterns: string[]): boolean {

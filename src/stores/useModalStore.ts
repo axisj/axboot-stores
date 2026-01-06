@@ -4,6 +4,9 @@ import React from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { create } from 'zustand';
 
+export const delay = <T>(ms: number, result?: T): Promise<T> =>
+  new Promise<T>(res => setTimeout(() => res(result as T), ms));
+
 /* ---------------------------------------------------------------------
  * TYPES
  * -------------------------------------------------------------------*/
@@ -45,7 +48,7 @@ export interface ModalModel {
 
 export interface ModalActions {
   openModal: <T = void>(modalFactory: ModalFactory<T>, id?: string) => Promise<T>;
-  _closeModal: (id?: string, fromPopState?: boolean) => void;
+  _closeModal: (id?: string, fromPopState?: boolean) => Promise<void>;
   removeModal: (id: string) => void;
   closeAllModal: () => void;
 }
@@ -76,12 +79,18 @@ export const useModalStore = create<ModalStore>((set, get) => ({
 
       /* resolve / reject */
       modal.resolve = value => {
-        get()._closeModal(id);
-        resolve(value as T);
+        get()
+          ._closeModal(id)
+          .then(() => {
+            resolve(value as T);
+          });
       };
       modal.reject = reason => {
-        get()._closeModal(id);
-        reject(reason);
+        get()
+          ._closeModal(id)
+          .then(() => {
+            reject(reason);
+          });
       };
 
       /* overlay click */
@@ -119,7 +128,7 @@ export const useModalStore = create<ModalStore>((set, get) => ({
   /* -----------------------------------------------------------------
      ✓ CLOSE MODAL → history.back() 로 pushState 제거
      -----------------------------------------------------------------*/
-  _closeModal: (id?: string, fromPopState = false) => {
+  _closeModal: async (id?: string, fromPopState = false) => {
     const modals = get().modals;
 
     // id 없으면 가장 최근 모달을 자동으로 닫음
@@ -139,6 +148,8 @@ export const useModalStore = create<ModalStore>((set, get) => ({
         history.back();
       }
     }
+
+    await delay(100); // 모달 닫히는 애니메이션 대기
 
     set({ updateAt: Date.now() });
   },

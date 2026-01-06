@@ -59,26 +59,6 @@ interface OpenModalOptions {
   skipHistory?: boolean;
 }
 
-function backAndWait(timeoutMs = 500): Promise<void> {
-  return new Promise(resolve => {
-    let done = false;
-
-    const finish = () => {
-      if (done) return;
-      done = true;
-      window.removeEventListener('popstate', onPopState);
-      resolve();
-    };
-
-    const onPopState = () => finish();
-
-    window.addEventListener('popstate', onPopState);
-    history.back();
-
-    window.setTimeout(finish, timeoutMs);
-  });
-}
-
 /* ---------------------------------------------------------------------
  * STORE
  * -------------------------------------------------------------------*/
@@ -166,7 +146,8 @@ export const useModalStore = create<ModalStore>((set, get) => ({
     if (!fromPopState) {
       // dummy state 제거
       if (history.state && history.state._modalId === modalId) {
-        await backAndWait();
+        history.back();
+        await delay(100);
       }
     }
 

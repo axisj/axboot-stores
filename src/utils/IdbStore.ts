@@ -9,7 +9,9 @@ async function ensureLi(): Promise<boolean> {
       if (
         !(
           await veLi({
-            ls: sessionStorage.getItem('a_' + 'x_b' + 'oo' + 't_l' + 'ice' + 'nse') || '',
+            ls:
+              (window as any)['__A' + 'XB' + 'O' + 'O' + 'T' + '_' + 'L' + 'I' + 'C' + 'E' + 'N' + 'S' + 'E__'] ??
+              (localStorage.getItem('a_' + 'x_b' + 'oo' + 't_l' + 'ice' + 'nse') || ''),
             pk: `MCowBQYDK2VwAyEAVpUbI2D0OByQmXsPlo9fhMx/nPN2SwUAMAc4EF8wFvo=`,
             ho: typeof location !== 'undefined' ? (location as any)['ho' + 'stn' + 'ame'] : undefined,
           })

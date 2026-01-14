@@ -27,9 +27,7 @@ interface IModalModel<T = any> {
 export class ModalModelClass {
   public modal: IModalModel;
   public open: boolean = true;
-  public rejected: boolean = false;
   public hasHistory: boolean = false;
-  public params: unknown;
 
   public resolve!: (value?: unknown) => void;
   public reject!: (reason?: unknown) => void;
@@ -46,18 +44,19 @@ export interface ModalModel {
   updateAt?: number;
 }
 
+interface OpenModalOptions {
+  skipHistory?: boolean;
+}
+
 export interface ModalActions {
-  openModal: <T = void>(modalFactory: ModalFactory<T>, id?: string) => Promise<T>;
+  openModal: <T = void>(modalFactory: ModalFactory<T>, id?: string, openModalOptions?: OpenModalOptions) => Promise<T>;
   _closeModal: (id?: string, fromPopState?: boolean) => Promise<void>;
   removeModal: (id: string) => void;
+  closeModal: (id: string) => void;
   closeAllModal: () => void;
 }
 
 export interface ModalStore extends ModalModel, ModalActions {}
-
-interface OpenModalOptions {
-  skipHistory?: boolean;
-}
 
 /* ---------------------------------------------------------------------
  * STORE
@@ -147,7 +146,7 @@ export const useModalStore = create<ModalStore>((set, get) => ({
       // dummy state 제거
       if (history.state && history.state._modalId === modalId) {
         history.back();
-        await delay(100);
+        await delay(300);
       }
     }
 
@@ -169,6 +168,7 @@ export const useModalStore = create<ModalStore>((set, get) => ({
     get().modals.clear();
     set({ updateAt: Date.now() });
   },
+
   closeModal: (id: string) => {
     const modal = get().modals.get(id);
     if (!modal) return;
@@ -191,6 +191,6 @@ if (typeof window !== 'undefined') {
     const lastModalId = Array.from(modals.keys()).at(-1);
     if (!lastModalId) return;
 
-    store._closeModal(lastModalId, true); // fromPopState=true
+    modals.get(lastModalId)?.hasHistory && store._closeModal(lastModalId, true); // fromPopState=true
   });
 }

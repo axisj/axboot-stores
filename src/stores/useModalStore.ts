@@ -41,7 +41,6 @@ export class ModalModelClass {
 
 export interface ModalModel {
   modals: Map<string, ModalModelClass>;
-  updateAt?: number;
 }
 
 interface OpenModalOptions {
@@ -120,8 +119,9 @@ export const useModalStore = create<ModalStore>((set, get) => ({
       }
 
       /* add modal */
-      get().modals.set(id, modal);
-      set({ updateAt: Date.now() });
+      const map = get().modals;
+      map.set(id, modal);
+      set({ modals: new Map([...map]) });
     });
   },
 
@@ -140,6 +140,7 @@ export const useModalStore = create<ModalStore>((set, get) => ({
 
     modal.open = false;
     modals.set(modalId, modal);
+    set({ modals: new Map([...modals]) });
 
     // popstate 로 인해 닫힌 경우에는 history.back() 하지 않음
     if (!fromPopState) {
@@ -150,23 +151,29 @@ export const useModalStore = create<ModalStore>((set, get) => ({
       }
     }
 
-    set({ updateAt: Date.now() });
   },
 
   /* -----------------------------------------------------------------
      REMOVE
      -----------------------------------------------------------------*/
   removeModal: id => {
-    get().modals.delete(id);
-    set({ updateAt: Date.now() });
+    const map = get().modals;
+    map.delete(id);
+    set({ modals: new Map([...map]) });
   },
 
   /* -----------------------------------------------------------------
      CLOSE ALL
      -----------------------------------------------------------------*/
   closeAllModal: () => {
-    get().modals.clear();
-    set({ updateAt: Date.now() });
+    const modals = Array.from(get().modals.values()).reverse();
+    modals.forEach(modal => {
+      if (!modal.open) return;
+      modal.reject();
+    });
+    const map = get().modals;
+    map.clear();
+    set({ modals: new Map([...map]) });
   },
 
   closeModal: (id: string) => {

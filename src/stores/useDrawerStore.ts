@@ -1,4 +1,4 @@
-import React from 'react';
+import type { MouseEvent } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { create } from 'zustand';
 
@@ -6,7 +6,7 @@ export type DrawerFactory<T> = (
   open: boolean,
   resolve: (value: any) => T,
   reject: (reason?: any) => void,
-  onClose: (evt: React.MouseEvent) => void,
+  onClose: (evt: MouseEvent) => void,
   afterOpenChange: (open: boolean) => void,
 ) => any;
 
@@ -22,7 +22,7 @@ export class DrawerModelClass {
   public params: unknown;
   public resolve!: (value?: unknown) => void;
   public reject!: (reason?: unknown) => void;
-  public onClose!: (evt: React.MouseEvent) => void;
+  public onClose!: (evt: MouseEvent) => void;
   public afterOpenChange!: (open: boolean) => void;
 
   public constructor(value: IDrawerModel) {

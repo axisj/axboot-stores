@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import type { MouseEvent } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { create } from 'zustand';
 
@@ -14,7 +14,7 @@ export type ModalFactory<T> = (
   open: boolean,
   resolve: (value: T) => T,
   reject: (reason?: any) => void,
-  onClose: (evt: React.MouseEvent) => void,
+  onClose: (evt: MouseEvent) => void,
   afterClose: () => void,
   keyboard?: boolean,
 ) => any;
@@ -31,7 +31,7 @@ export class ModalModelClass {
 
   public resolve!: (value?: unknown) => void;
   public reject!: (reason?: unknown) => void;
-  public onClose!: (evt: React.MouseEvent) => void;
+  public onClose!: (evt: MouseEvent) => void;
   public afterClose!: () => void;
 
   constructor(value: IModalModel) {

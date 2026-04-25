@@ -188,16 +188,23 @@ export const useModalStore = create<ModalStore>((set, get) => ({
  * GLOBAL POPSTATE LISTENER → 뒤로가기 시 모달 닫기
  * -------------------------------------------------------------------*/
 if (typeof window !== 'undefined') {
-  window.addEventListener('popstate', () => {
+  window.addEventListener('popstate', event => {
     const store = useModalStore.getState();
-    const modals = store.modals;
+    const modals = Array.from(store.modals.entries());
 
-    if (modals.size === 0) return;
+    if (modals.length === 0) return;
 
-    // 가장 최근 모달 닫기
-    const lastModalId = Array.from(modals.keys()).at(-1);
-    if (!lastModalId) return;
+    const stateModalId = (event.state as { _modalId?: string } | null)?._modalId;
 
-    modals.get(lastModalId)?.hasHistory && store._closeModal(lastModalId, true); // fromPopState=true
+    // 현재 history state에 남아있는 모달 id와 다른(더 위에 열린) 모달만 닫는다.
+    // 이렇게 하면 자식 모달 닫힘(popstate) 시 부모 모달이 함께 닫히는 현상을 막을 수 있다.
+    const targetModalEntry = [...modals]
+      .reverse()
+      .find(([id, modal]) => modal.open && modal.hasHistory && (!stateModalId || id !== stateModalId));
+
+    if (!targetModalEntry) return;
+
+    const [targetModalId] = targetModalEntry;
+    store._closeModal(targetModalId, true); // fromPopState=true
   });
 }
